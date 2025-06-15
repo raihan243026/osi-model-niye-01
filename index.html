@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSI Model Data Transfer Animation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .light-theme {
+      background-color: #f0f0f0;
+      color: #333;
+    }
+    .dark-theme {
+      background-color: #222;
+      color: #ddd;
+    }
+    #canvas-container {
+      margin-top: 20px;
+    }
+    #description {
+      width: 80%;
+      max-width: 800px;
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .light-theme #description {
+      background-color: white;
+    }
+    .dark-theme #description {
+      background-color: #333;
+    }
+    h2 {
+      margin-top: 0;
+    }
+    p {
+      line-height: 1.6;
+    }
+    .button-container {
+      margin: 10px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+    .light-theme button {
+      background-color: #007bff;
+      color: white;
+    }
+    .dark-theme button {
+      background-color: #4da8ff;
+      color: #222;
+    }
+    button:hover {
+      filter: brightness(0.9);
+    }
+    .theme-button {
+      font-size: 20px;
+      padding: 10px;
+    }
+    .speak-button {
+      background-color: #28a745;
+    }
+    .dark-theme .speak-button {
+      background-color: #4cd964;
+    }
+  </style>
+</head>
+<body class="light-theme">
+  <div class="button-container">
+    <button onclick="startAnimation()">Start/Reset Animation</button>
+    <button class="theme-button" onclick="toggleTheme()" id="theme-button">☀️</button>
+  </div>
+  <div id="canvas-container"></div>
+  <div id="description">
+    <h2>OSI Model Data Transfer</h2>
+    <p id="desc-text">Click "Start/Reset Animation" to see how data flows and each layer works! Click a layer for details or use Speak to listen.</p>
+    <button class="speak-button" onclick="speakDescription()">Speak Description</button>
+  </div>
+
+  <script>
+    // OSI Model Layers with expanded details
+    const layers = [
+      {
+        name: "application",
+        dataUnit: "data",
+        desc: "<strong>function:</strong> acts as the user interface to network services, enabling apps like browsers, email clients, or chat programs to communicate over the network.<br><strong>data storage:</strong> stores user-generated content, such as an email’s body, a web form’s input, or a file upload request.<br><strong>data transfer:</strong> sends raw data to the presentation layer without headers, initiating the network communication process.<br><strong>detailed example:</strong> when you send an email via outlook, the application layer formats your message (e.g., subject, body, attachments) into a structured format (e.g., mime) and passes it down. for example, typing 'hello, meeting at 5 pm' in gmail creates a data payload sent to the next layer. similarly, clicking a youtube video sends an http request.<br><strong>protocols:</strong> http/https (web browsing), smtp/imap/pop3 (email), ftp/sftp (file transfer), dns (domain resolution), snmp (network management), telnet, dhcp.<br><strong>key tasks:</strong> data formatting, user interaction, application-specific protocols, initiating communication, error handling at app level.<br><strong>how it works:</strong> receives input from apps, formats it into a network-compatible structure, and forwards it for further processing.<br><strong>animation:</strong> shows data creation (e.g., text bubble appearing with 'email content').",
+        summary: "formats user data (e.g., email in outlook) and sends to presentation.",
+        color: "#ff6f61",
+        headerSize: 0,
+        animPhase: 0
+      },
+      {
+        name: "presentation",
+        dataUnit: "data",
+        desc: "<strong>function:</strong> translates data into a format the application layer can use, managing encryption, compression, and character encoding for compatibility and security.<br><strong>data storage:</strong> stores transformed data, such as encrypted text (e.g., tls-encrypted email), compressed media (e.g., mp4 video), or encoded text (e.g., utf-8).<br><strong>data transfer:</strong> adds a presentation header (e.g., mime type, encryption metadata) and passes data to the session layer.<br><strong>detailed example:</strong> when sending a secure email, this layer encrypts the message with tls, ensuring it’s unreadable without the key. for a netflix stream, it compresses the video into h.264 format to reduce bandwidth. if you send a text in a different language, it converts characters (e.g., ascii to utf-8).<br><strong>protocols/formats:</strong> ssl/tls (encryption), jpeg/png/gif (images), mpeg/mp4/h.264 (videos), ascii/utf-8/ebcdic (text encoding), mime (email attachments).<br><strong>key tasks:</strong> encryption/decryption, data compression/decompression, character set conversion, format standardization, security layer.<br><strong>how it works:</strong> processes data to ensure security, efficiency, and compatibility, then hands it off.<br><strong>animation:</strong> shows encryption (lock icon pulses) or compression (data shrinks).",
+        summary: "encrypts/compresses data (e.g., tls email) for session layer.",
+        color: "#ffb347",
+        headerSize: 5,
+        animPhase: 0
+      },
+      {
+        name: "session",
+        dataUnit: "data",
+        desc: "<strong>function:</strong> manages communication sessions between applications, handling connection setup, maintenance, and termination.<br><strong>data storage:</strong> stores session metadata, like session ids, timestamps, or state info, to track and manage ongoing communications.<br><strong>data transfer:</strong> adds a session header with connection details (e.g., session id) and passes data to the transport layer.<br><strong>detailed example:</strong> during a skype call, the session layer assigns a session id to keep the call active, reconnecting if the network drops briefly. in an online banking session, it ensures your login session remains valid until you log out.<br><strong>protocols:</strong> netbios (network file sharing), rpc (remote procedure calls), pptp/l2tp (vpn), smb (windows file sharing), sip (voip).<br><strong>key tasks:</strong> session establishment, synchronization, termination, session recovery, dialogue control (e.g., half/full-duplex).<br><strong>how it works:</strong> maintains logical connections, ensuring continuous and coordinated data exchange.<br><strong>animation:</strong> shows session id assignment (id tag pulses on packet).",
+        summary: "manages sessions (e.g., skype call) with metadata for transport.",
+        color: "#ffdb58",
+        headerSize: 5,
+        animPhase: 0
+      },
+      {
+        name: "transport",
+        dataUnit: "segment",
+        desc: "<strong>function:</strong> ensures reliable end-to-end data delivery by segmenting data, checking for errors, and controlling data flow to prevent congestion.<br><strong>data storage:</strong> divides data into segments, stores sequence numbers, source/destination ports (e.g., port 443 for https), and checksums for error detection.<br><strong>data transfer:</strong> adds a transport header (e.g., tcp/udp details) and passes segments to the network layer.<br><strong>detailed example:</strong> when streaming a movie on disney+, the transport layer (using tcp) splits the video into segments, numbers them (e.g., segment 1, 2), and ensures they arrive in order. if a segment is lost, it’s retransmitted. for a live twitch stream, udp is used for speed, accepting minor losses.<br><strong>protocols:</strong> tcp (reliable, connection-oriented), udp (fast, connectionless), sctp (multi-streaming), dccp.<br><strong>key tasks:</strong> segmentation/reassembly, error detection/correction, flow control, multiplexing (port assignment), connection management.<br><strong>how it works:</strong> organizes data into segments, ensures reliability, and balances data flow.<br><strong>animation:</strong> shows data splitting into numbered segments.",
+        summary: "segments data (e.g., movie stream) with error checks for network.",
+        color: "#98fb98",
+        headerSize: 10,
+        animPhase: 0
+      },
+      {
+        name: "network",
+        dataUnit: "packet",
+        desc: "<strong>function:</strong> routes data across multiple networks using logical addressing and path selection, enabling internet communication.<br><strong>data storage:</strong> stores source/destination ip addresses (e.g., 192.168.1.1), time-to-live (ttl), and protocol info in packet headers.<br><strong>data transfer:</strong> encapsulates segments into packets, adds a network header, and passes to the data link layer.<br><strong>detailed example:</strong> when you search on google, this layer adds google’s ip (e.g., 172.217.16.78) to packets and routes them through internet routers. if you ping a server, icmp packets are used to test connectivity.<br><strong>protocols:</strong> ip (ipv4/ipv6), icmp (ping), igmp (multicast), ipsec (secure ip), arp (address resolution).<br><strong>key tasks:</strong> logical addressing, routing, packet forwarding, fragmentation/reassembly, network-layer security.<br><strong>how it works:</strong> assigns network addresses and finds the best path for data delivery.<br><strong>animation:</strong> shows ip address tags added to packets.",
+        summary: "routes packets (e.g., google search) with ip for data link.",
+        color: "#87ceeb",
+        headerSize: 10,
+        animPhase: 0
+      },
+      {
+        name: "data link",
+        dataUnit: "frame",
+        desc: "<strong>function:</strong> ensures error-free data transfer between devices on the same network using physical addressing and error detection.<br><strong>data storage:</strong> stores source/destination mac addresses (e.g., 00:1a:2b:3c:4d:5e), frame check sequences (crc), and frame delimiters in headers/trailers.<br><strong>data transfer:</strong> encapsulates packets into frames, adds header and trailer, and passes to the physical layer.<br><strong>detailed example:</strong> when your phone connects to a wi-fi router, this layer adds your phone’s mac address to frames sent to the router. ethernet switches use mac addresses to forward frames within a lan.<br><strong>protocols:</strong> ethernet (wired), ppp (point-to-point), wi-fi (802.11), hdlc, frame relay.<br><strong>key tasks:</strong> framing, physical addressing, error detection (crc), flow control, access control (e.g., csma/cd).<br><strong>how it works:</strong> packages data into frames, ensures local delivery, and checks for errors.<br><strong>animation:</strong> shows mac address and crc addition to frames.",
+        summary: "frames data (e.g., phone to router) with mac for physical.",
+        color: "#dda0dd",
+        headerSize: 15,
+        animPhase: 0
+      },
+      {
+        name: "physical",
+        dataUnit: "bits",
+        desc: "<strong>function:</strong> transmits raw bits over physical media, such as cables, fiber optics, or wireless signals, defining hardware and signal standards.<br><strong>data storage:</strong> converts frames into electrical, optical, or radio signals; no headers added.<br><strong>data transfer:</strong> sends bits to the receiving device’s physical layer via physical media.<br><strong>detailed example:</strong> when watching a youtube video, this layer sends bits through your ethernet cable or wi-fi signal to your device. a fiber optic connection uses light pulses to transmit bits at high speed.<br><strong>hardware/standards:</strong> ethernet cables (cat5e/cat6), fiber optics, wi-fi (802.11ac/ax), dsl, t1, usb, bluetooth.<br><strong>key tasks:</strong> bit transmission, signal encoding, hardware specifications, media access, timing.<br><strong>how it works:</strong> converts digital data into physical signals for transmission.<br><strong>animation:</strong> shows bits as pulsing signals.",
+        summary: "sends bits (e.g., youtube video) via cables or wi-fi.",
+        color: "#f08080",
+        headerSize: 0,
+        animPhase: 0
+      }
+    ];
+
+    // Animation variables
+    let packet = null;
+    let animating = false;
+    let currentLayer = -1;
+    let pauseTime = 0;
+    const pauseDuration = 180; // ~3s at 60fps
+    let canvasWidth = 800;
+    let canvasHeight = 600;
+    let layerHeight = canvasHeight / layers.length;
+    let selectedLayer = -1;
+
+    function setup() {
+      let canvas = createCanvas(canvasWidth, canvasHeight);
+      canvas.parent('canvas-container');
+      textAlign(CENTER, TOP);
+      textSize(12);
+      textLeading(14);
+    }
+
+    function draw() {
+      // Apply theme
+      if (document.body.classList.contains('dark-theme')) background(50);
+      else background(220);
+
+      // Draw OSI layers
+      for (let i = 0; i < layers.length; i++) {
+        fill(layers[i].color);
+        if (i === currentLayer || i === selectedLayer) stroke(0, 0, 255, 255);
+        else stroke(0, 0, 0, 50);
+        rect(50, i * layerHeight, canvasWidth - 100, layerHeight - 5, 10);
+        fill(0);
+        textAlign(CENTER, CENTER);
+        textSize(16);
+        text(layers[i].name, canvasWidth / 2, i * layerHeight + layerHeight / 2);
+        // Show summary if selected
+        if (i === selectedLayer) {
+          textAlign(LEFT, TOP);
+          textSize(12);
+          fill(0);
+          text(layers[i].summary, 60, i * layerHeight + 10, canvasWidth - 120);
+        }
+        // Layer-specific animation
+        if (i === currentLayer && animating) {
+          layers[i].animPhase += 0.05;
+          if (layers[i].animPhase > TWO_PI) layers[i].animPhase = 0;
+          let animX = canvasWidth - 100;
+          let animY = i * layerHeight + layerHeight / 2;
+          if (i === 0) { // Application: Text bubble
+            fill(255, 255, 0, 200);
+            ellipse(animX - 30, animY, 30 + 10 * sin(layers[i].animPhase), 30);
+            fill(0);
+            textSize(10);
+            text("email", animX - 30, animY);
+          } else if (i === 1) { // Presentation: Lock
+            fill(255, 165, 0, 200);
+            rect(animX - 40, animY - 15, 20, 30, 5);
+            ellipse(animX - 30, animY - 15, 20 + 5 * sin(layers[i].animPhase));
+          } else if (i === 2) { // Session: ID tag
+            fill(0, 255, 255, 200);
+            rect(animX - 40, animY - 10, 30, 20, 5);
+            fill(0);
+            textSize(10);
+            text("ID", animX - 25, animY);
+          } else if (i === 3) { // Transport: Segments
+            for (let j = 0; j < 3; j++) {
+              fill(0, 255, 0, 150);
+              rect(animX - 50, animY - 20 + j * 15, 20, 10, 3);
+              fill(0);
+              textSize(8);
+              text(j + 1, animX - 40, animY - 15 + j * 15);
+            }
+          } else if (i === 4) { // Network: IP tags
+            fill(0, 0, 255, 200);
+            rect(animX - 40, animY - 10, 30, 20, 5);
+            fill(0);
+            textSize(8);
+            text("IP", animX - 25, animY);
+          } else if (i === 5) { // Data Link: MAC
+            fill(255, 0, 255, 200);
+            rect(animX - 40, animY - 10, 40, 20, 5);
+            fill(0);
+            textSize(8);
+            text("MAC", animX - 20, animY);
+          } else if (i === 6) { // Physical: Signals
+            for (let j = 0; j < 3; j++) {
+              fill(255, 0, 0, 200);
+              ellipse(animX - 50 + j * 20, animY, 10 + 5 * sin(layers[i].animPhase + j));
+            }
+          }
+        }
+      }
+
+      // Handle packet animation
+      if (animating && packet) {
+        // Draw packet with headers
+        let currentSize = 20;
+        for (let i = layers.length - 1; i >= currentLayer && i > 0; i--) {
+          if (layers[i].headerSize > 0) {
+            fill(100, 100, 100, 150);
+            ellipse(packet.x, packet.y, currentSize + layers[i].headerSize, currentSize + layers[i].headerSize);
+            currentSize += layers[i].headerSize;
+          }
+        }
+        fill(0, 255, 0);
+        ellipse(packet.x, packet.y, 20, 20);
+        // Data unit label
+        fill(0);
+        textAlign(CENTER, CENTER);
+        textSize(14);
+        text(packet.dataUnit, packet.x + 50, packet.y);
+
+        if (pauseTime > 0) {
+          pauseTime--;
+        } else {
+          packet.y += 2;
+          // Check for next layer
+          for (let i = 0; i < layers.length; i++) {
+            if (packet.y >= i * layerHeight && packet.y < (i + 1) * layerHeight && i > currentLayer) {
+              currentLayer = i;
+              pauseTime = pauseDuration;
+              packet.size += layers[i].headerSize;
+              packet.dataUnit = layers[i].dataUnit;
+              document.getElementById('desc-text').innerHTML = `<strong>${layers[i].name} layer (${layers[i].dataUnit}):</strong><br>${layers[i].desc}`;
+              break;
+            }
+          }
+          // Reset at bottom
+          if (packet.y > canvasHeight) {
+            animating = false;
+            packet = null;
+            currentLayer = -1;
+            document.getElementById('desc-text').innerHTML = "animation complete! click 'start/reset animation' or a layer for details.";
+          }
+        }
+      }
+    }
+
+    function mousePressed() {
+      for (let i = 0; i < layers.length; i++) {
+        if (mouseY > i * layerHeight && mouseY < (i + 1) * layerHeight && mouseX > 50 && mouseX < canvasWidth - 50) {
+          selectedLayer = i;
+          document.getElementById('desc-text').innerHTML = `<strong>${layers[i].name} layer (${layers[i].dataUnit}):</strong><br>${layers[i].desc}`;
+          break;
+        }
+      }
+    }
+
+    function startAnimation() {
+      animating = true;
+      currentLayer = -1;
+      pauseTime = 0;
+      packet = { x: canvasWidth / 2, y: 0, size: 20, dataUnit: "data" };
+      selectedLayer = -1;
+      for (let layer of layers) layer.animPhase = 0;
+      document.getElementById('desc-text').innerHTML = "data packet starting at application layer...";
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('light-theme');
+      document.body.classList.toggle('dark-theme');
+      const button = document.getElementById('theme-button');
+      button.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
+    }
+
+    function speakDescription() {
+      const text = document.getElementById('desc-text').innerText;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1;
+      speechSynthesis.speak(utterance);
+    }
+  </script>
+</body>
+</html>
